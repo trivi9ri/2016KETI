@@ -3,7 +3,7 @@ from subprocess import *
 from pandas import Series, DataFrame
 import pandas as pd
 
-db = 'mos_view/mos_view@106.240.225.99:1521/orcl'
+db = 'sample db'
 
 def sql_connection(conn, sql):
 	session = Popen(['sqlplus','-S',conn], stdin=PIPE, stdout=PIPE, stderr = PIPE)
@@ -29,7 +29,10 @@ def get_table_info():
 	return tb_file
 
 def make_TbInfo_arr(filename):
-	
+	table_file = open(filename, 'r')
+	owners = []
+	tb_names = []
+
 
 
 
