@@ -5,10 +5,12 @@ import pandas as pd
 
 db = 'sample db'
 
+
 def sql_connection(conn, sql):
 	session = Popen(['sqlplus','-S',conn], stdin=PIPE, stdout=PIPE, stderr = PIPE)
 	session.stdin.write(sql)
 	return session.communicate()
+
 
 def get_table_info():
 	table_query = '@/home/yung/2016KETI/SS/tables.sql;'
@@ -28,22 +30,35 @@ def get_table_info():
 	table_info.close()
 	return tb_file
 
-def make_TbInfo_arr(filename):
+
+def make_TbInfo_df(filename):
 	table_file = open(filename, 'r')
 	owners = []
 	tb_names = []
-
+	while 1:
+		line = table_file.readline()
+		if not line: break
+		if '--' not in line:
+			temp = line.strip().split(' ')
+			if len(temp) > 3:
+				owners.append(temp[0])
+				tb_names.append(temp[1])
+	data = { owners.pop(0): owners, tb_names.pop(0) :tb_names}
+	table_data = pd.DataFrame(data)
+	print table_data
+	return table_data
 
 
 
 def get_column_info():
-	column_query = 'DESC %s;' % (table_name)
-	print sql_connection(db, column_query)
+	make_TbInfo_df(get_table_info())
+	#column_query = 'DESC %s;' % (table_name)
+	#print sql_connection(db, column_query)
 
 
 
 def main():
-	get_table_info()
+	get_column_info()
 
 
 if __name__ == '__main__':
