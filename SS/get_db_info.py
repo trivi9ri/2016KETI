@@ -65,6 +65,7 @@ def hex_to_str(hexstr):
 def get_column_info():
 	table_data = pd.DataFrame()
 	table_data = make_TbInfo_df(get_table_info())
+	td_file = open("table_data.txt",'w')
 	res_sent = ''
 	#tb_df_r = table_data.shape[0]
 	#tb_df_c = table_data.shape[1]
@@ -77,8 +78,9 @@ def get_column_info():
 		if "ERROR:" not in str(qur_res):
 			# table_columns = re.sub(r'\\t', '\t', str(qur_res))
 			# table_columns = re.sub(r'\\n', '\n', table_columns )
-			tmp = re.split("(\\\\t| |\\\\n)", str(qur_res))
-			for tmps in tmp:
+			tmp_a = re.split("(\\\\t| |\\\\n)", str(qur_res))
+			for tmp in tmp_a:
+				tmps = re.sub(r'([,.\'\(\)])','',tmp) 
 				if '\\x' in tmps:
 					res_sent += hex_to_str(tmps)
 				else:
@@ -86,7 +88,9 @@ def get_column_info():
 					tmp_n = re.sub(r'\\n', '\n', tmp_t)
 					res_sent += tmp_n	
 			if res_sent !='':
-				print res_sent
+				td_file.write("Table name: %s\n" % table_name)
+				td_file.write(str(res_sent))
+				td_file.write("\n")
 		# if '\\x' in str(qur_res):
 		# 	strtmp =hex_to_str(str(qur_res))
 		# 	print strtmp
