@@ -56,30 +56,16 @@ def make_TbInfo_df(filename):
 
 
 def hex_to_str(hexstr):
-	hexstr_n = hexstr.split('\\n')
-	hex_n_list = []
-	for hexn in hexstr_n:
-		hexstr_t = hexn.split('\\t')
-		hex_n_list += hexstr_t
-	print hex_n_list
-	# # hexstrs = re.split(r'([ ,.?\'],[\\n])', hexstr)
-	# resstr = ''
-	# for hexs in hexstrs:
-	# 	if '\\x' in hexs:
-	# 		hexs = re.sub(r"[\\x]","",hexs)
-	# 		hexs = hexs.strip()
-			
-	# 		strtmp = binascii.unhexlify(hexs)
-	# 		resstr+= strtmp
-	# 	else: resstr+= hexs
-	# return resstr
+	hexs = re.sub(r"[\\x?]","",hexstr)
+	hexs = hexs.strip()
+	strtmp = binascii.unhexlify(hexs)
+	return strtmp
 
 
 def get_column_info():
 	table_data = pd.DataFrame()
 	table_data = make_TbInfo_df(get_table_info())
-	strtmp = ''
-
+	res_sent = ''
 	#tb_df_r = table_data.shape[0]
 	#tb_df_c = table_data.shape[1]
 
@@ -88,8 +74,21 @@ def get_column_info():
 	for table_name in tables:
 		column_query = 'DESC %s;' % (table_name)
 		qur_res = sql_connection(db, column_query)
-		if '\\x' in str(qur_res):
-			strtmp =hex_to_str(str(qur_res))
+		if "ERROR:" not in str(qur_res):
+			# table_columns = re.sub(r'\\t', '\t', str(qur_res))
+			# table_columns = re.sub(r'\\n', '\n', table_columns )
+			tmp = re.split("(\\\\t| |\\\\n)", str(qur_res))
+			for tmps in tmp:
+				if '\\x' in tmps:
+					res_sent += hex_to_str(tmps)
+				else:
+					tmp_t = re.sub(r'\\t', '\t',tmps)
+					tmp_n = re.sub(r'\\n', '\n', tmp_t)
+					res_sent += tmp_n	
+			if res_sent !='':
+				print res_sent
+		# if '\\x' in str(qur_res):
+		# 	strtmp =hex_to_str(str(qur_res))
 		# 	print strtmp
 		# else: print qur_res
 
