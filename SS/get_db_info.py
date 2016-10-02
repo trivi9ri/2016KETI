@@ -13,7 +13,7 @@ import time
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-db = 'sample'
+db = 'sample db'
 
 
 def sql_connection(conn, sql):
@@ -85,11 +85,13 @@ def get_column_info():
 	# i = 0
 	r_table = 0
 	start_time = time.time()
+	i = 0
 	for table_name in tables:
 		column_query = 'DESC %s;' % (table_name)
 		qur_res = sql_connection(db, column_query)
 		if "ERROR:" not in str(qur_res):
 			r_table += 1
+			i += 1
 			# table_columns = re.sub(r'\\t', '\t', str(qur_res))
 			# table_columns = re.sub(r'\\n', '\n', table_columns )
 			tmp_a = re.split("(\\\\t| |\\\\n)", str(qur_res))
@@ -105,6 +107,7 @@ def get_column_info():
 				tmp_sent = ("Table name: %s\n" % table_name) + res_sent + "\n"
 				td_file.write(tmp_sent.encode('utf-8'))
 				total_info += tmp_sent
+			if i == 15: break;
 		# i+=1
 		# if i == 10:
 		# 	break
@@ -118,10 +121,21 @@ def table_analysis():
 	tb_file = open('table_data.txt','r')
 	tb_data = tb_file.read()
 	tbs_data = tb_data.split('Table name')
+	data_df = pd.DataFrame()
+	table_df = pd.DataFrame()
+	data_list = []
+	table_dt = []
+	i = 0
 	for data in tbs_data:
-		print data.decode('utf-8')
-
-
+		i+=1
+		en_data = data.decode('utf-8')
+		tmp_tb = re.split(r'([:\n])',en_data)
+		if len(tmp_tb) > 3:
+			table_dt.append(tmp_tb[2])
+		# temp_list = re.split('[ ,._]',en_data)
+		# data_list += temp_list
+	table_df = pd.DataFrame(table_dt)
+	print table_df
 
 
 def main():
