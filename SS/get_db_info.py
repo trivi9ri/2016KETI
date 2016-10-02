@@ -1,3 +1,4 @@
+#-*- coding: utf-8 -*-
 from sqlplus_commando import SqlplusCommando
 from subprocess import *
 from pandas import Series, DataFrame
@@ -5,8 +6,14 @@ import pandas as pd
 import re
 import sys
 import binascii
+import nltk
+import time
 
-db = 'mos_view/mos_view@106.240.225.99:1521/orcl'
+
+reload(sys)
+sys.setdefaultencoding('utf-8')
+
+db = 'sample'
 
 
 def sql_connection(conn, sql):
@@ -40,10 +47,12 @@ def make_TbInfo_df(filename):
 	table_file = open(filename, 'r')
 	owners = []
 	tb_names = []
-
+	total_tb = 0
 	while 1:
 		line = table_file.readline()
 		if not line: break
+		if 'TABLE' in line:
+			total_tb += 1
 		if '--' not in line:
 			temp = line.strip().split(' ')
 			if len(temp) > 3:
@@ -52,6 +61,7 @@ def make_TbInfo_df(filename):
 	data = { owners.pop(0): owners, tb_names.pop(0) :tb_names}
 	table_data = pd.DataFrame(data)
 	#print table_data
+	print ("Total Table: %d\n" % total_tb)
 	return table_data
 
 
@@ -67,15 +77,19 @@ def get_column_info():
 	table_data = make_TbInfo_df(get_table_info())
 	td_file = open("table_data.txt",'w')
 	res_sent = ''
+	total_info = ''
 	#tb_df_r = table_data.shape[0]
 	#tb_df_c = table_data.shape[1]
 
 	tables = table_data[table_data.columns[0]]
-	i = 0
+	# i = 0
+	r_table = 0
+	start_time = time.time()
 	for table_name in tables:
 		column_query = 'DESC %s;' % (table_name)
 		qur_res = sql_connection(db, column_query)
 		if "ERROR:" not in str(qur_res):
+			r_table += 1
 			# table_columns = re.sub(r'\\t', '\t', str(qur_res))
 			# table_columns = re.sub(r'\\n', '\n', table_columns )
 			tmp_a = re.split("(\\\\t| |\\\\n)", str(qur_res))
@@ -88,21 +102,30 @@ def get_column_info():
 					tmp_n = re.sub(r'\\n', '\n', tmp_t)
 					res_sent += tmp_n	
 			if res_sent !='':
-				td_file.write("Table name: %s\n" % table_name)
-				td_file.write(str(res_sent))
-				td_file.write("\n")
-		# if '\\x' in str(qur_res):
-		# 	strtmp =hex_to_str(str(qur_res))
-		# 	print strtmp
-		# else: print qur_res
+				tmp_sent = ("Table name: %s\n" % table_name) + res_sent + "\n"
+				td_file.write(tmp_sent.encode('utf-8'))
+				total_info += tmp_sent
+		# i+=1
+		# if i == 10:
+		# 	break
+	print ("time: %s\n"% (time.time() - start_time))
+	print ("r_table: %d" % r_table)
+	td_file.close()
+	return
 
-		i+=1
-		if i == 10:
-			break
+def table_analysis():
+	get_column_info()
+	tb_file = open('table_data.txt','r')
+	tb_data = tb_file.read()
+	tbs_data = tb_data.split('Table name')
+	for data in tbs_data:
+		print data.decode('utf-8')
+
+
 
 
 def main():
-	get_column_info()
+	table_analysis()
 
 
 if __name__ == '__main__':
