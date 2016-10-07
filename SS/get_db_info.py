@@ -13,7 +13,7 @@ import time
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-db = 'sample db'
+db = 'sample'
 
 
 def sql_connection(conn, sql):
@@ -78,10 +78,13 @@ def get_column_info():
 	td_file = open("table_data.txt",'w')
 	res_sent = ''
 	total_info = ''
+	idx = 0;
 	#tb_df_r = table_data.shape[0]
 	#tb_df_c = table_data.shape[1]
 
 	tables = table_data[table_data.columns[0]]
+	owners = table_data[table_data.columns[1]]
+	print owners
 	# i = 0
 	r_table = 0
 	start_time = time.time()
@@ -104,9 +107,10 @@ def get_column_info():
 					tmp_n = re.sub(r'\\n', '\n', tmp_t)
 					res_sent += tmp_n	
 			if res_sent !='':
-				tmp_sent = ("Table name: %s\n" % table_name) + res_sent + "\n"
+				tmp_sent = ("Table name: %s\nOwner name: %s\n" % (table_name,owners[idx])) + res_sent + "\n"
 				td_file.write(tmp_sent.encode('utf-8'))
 				total_info += tmp_sent
+				idx+=1
 			if i == 15: break;
 		# i+=1
 		# if i == 10:
@@ -123,8 +127,10 @@ def table_analysis():
 	tbs_data = tb_data.split('Table name')
 	data_df = pd.DataFrame()
 	table_df = pd.DataFrame()
+	owner_df = pd.DataFrame()
 	data_list = []
 	table_dt = []
+	owner_dt = []
 	i = 0
 	for data in tbs_data:
 		i+=1
@@ -132,11 +138,15 @@ def table_analysis():
 		tmp_tb = re.split(r'([:\n])',en_data)
 		if len(tmp_tb) > 3:
 			table_dt.append(tmp_tb[2])
+		if 'Owner' in data:
+			own_tmp = re.search("Owner name: \w+",data)
+			own_group = own_tmp.group()
+			own_group = own_group.strip().split(' ')[2]
+			owner_dt.append(own_group)
 		# temp_list = re.split('[ ,._]',en_data)
 		# data_list += temp_list
 	table_df = pd.DataFrame(table_dt)
-	print table_df
-
+	owner_df = pd.DataFrame(owner_dt)
 
 def main():
 	table_analysis()
