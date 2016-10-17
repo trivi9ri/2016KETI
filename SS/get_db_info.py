@@ -8,6 +8,7 @@ import sys
 import binascii
 import nltk
 import time
+from collections import Counter
 
 
 reload(sys)
@@ -88,13 +89,13 @@ def get_column_info():
 	# i = 0
 	r_table = 0
 	start_time = time.time()
-	i = 0
+#	i = 0
 	for table_name in tables:
 		column_query = 'DESC %s;' % (table_name)
 		qur_res = sql_connection(db, column_query)
 		if "ERROR:" not in str(qur_res):
 			r_table += 1
-			i += 1
+			#i += 1
 			# table_columns = re.sub(r'\\t', '\t', str(qur_res))
 			# table_columns = re.sub(r'\\n', '\n', table_columns )
 			tmp_a = re.split("(\\\\t| |\\\\n)", str(qur_res))
@@ -111,7 +112,7 @@ def get_column_info():
 				td_file.write(tmp_sent.encode('utf-8'))
 				total_info += tmp_sent
 				idx+=1
-			if i == 15: break;
+			#if i == 15: break;
 		# i+=1
 		# if i == 10:
 		# 	break
@@ -145,8 +146,20 @@ def table_analysis():
 			owner_dt.append(own_group)
 		# temp_list = re.split('[ ,._]',en_data)
 		# data_list += temp_list
-	table_df = pd.DataFrame(table_dt)
-	owner_df = pd.DataFrame(owner_dt)
+	table_dic = {'Table':table_dt}
+	owner_dic = {'Owner':owner_dt}
+	table_df = pd.DataFrame(table_dic)
+	owner_df = pd.DataFrame(owner_dic)
+	
+
+	result_tb=pd.Series(' '.join(table_df['Table']).split('_')).value_counts()
+	result_own = pd.Series(' '.join(owner_df['Owner']).split()).value_counts()
+	# counter = Counter(owner_df)
+	# print counter
+	print "Table counts\n"
+	print result_tb
+	print "Owner counts\n"
+	print result_own
 
 def main():
 	table_analysis()
