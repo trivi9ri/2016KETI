@@ -14,6 +14,7 @@ from collections import Counter
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
+db_data_file = open("db_data.txt",'w')
 db = 'sample'
 
 
@@ -62,7 +63,7 @@ def make_TbInfo_df(filename):
 	data = { owners.pop(0): owners, tb_names.pop(0) :tb_names}
 	table_data = pd.DataFrame(data)
 	#print table_data
-	print ("Total Table: %d\n" % total_tb)
+	db_data_file.write("Total Table: %d\n" % total_tb)
 	return table_data
 
 
@@ -89,7 +90,7 @@ def get_column_info():
 	# i = 0
 	r_table = 0
 	start_time = time.time()
-#	i = 0
+	#i = 0
 	for table_name in tables:
 		column_query = 'DESC %s;' % (table_name)
 		qur_res = sql_connection(db, column_query)
@@ -113,11 +114,9 @@ def get_column_info():
 				total_info += tmp_sent
 				idx+=1
 			#if i == 15: break;
-		# i+=1
-		# if i == 10:
-		# 	break
+		
 	print ("time: %s\n"% (time.time() - start_time))
-	print ("r_table: %d" % r_table)
+	print ("table: %d" % r_table)
 	td_file.close()
 	return
 
@@ -153,13 +152,26 @@ def table_analysis():
 	
 
 	result_tb=pd.Series(' '.join(table_df['Table']).split('_')).value_counts()
-	result_own = pd.Series(' '.join(owner_df['Owner']).split()).value_counts()
-	# counter = Counter(owner_df)
-	# print counter
-	print "Table counts\n"
-	print result_tb
-	print "Owner counts\n"
-	print result_own
+	key_tb = pd.Series(' '.join(table_df['Table']).split('_')).value_counts().keys()
+	result_own = pd.Series(' '.join(owner_df['Owner']).lower().split()).value_counts()
+	key_own = owner_df['Owner'].value_counts().keys()
+	
+	tmp_tb_dt = {'Table_data':key_tb,'Table frequency':result_tb}
+			
+	tmp_on_dt = {'Owner data':key_own, 'Owner frequency':result_own}
+	
+	tb_dt =  pd.DataFrame(tmp_tb_dt)
+	on_dt = pd.DataFrame(tmp_on_dt)
+
+	db_data_file.write("Owner data\n")
+	for b in range(len(on_dt)):
+		db_data_file.write(str(on_dt['Owner data'][b])+" has "+str(on_dt['Owner frequency'][b])+" tables\n")
+	db_data_file.write("\n\nTabla data\n")
+	for a in range(len(tb_dt)):
+		db_data_file.write(str(tb_dt['Table_data'][a])+" "+str(tb_dt['Table frequency'][a])+"\n")
+	
+	db_data_file.close()
+	
 
 def main():
 	table_analysis()
