@@ -1,17 +1,22 @@
 #-*- coding: utf-8 -*-
+import matplotlib
+matplotlib.use('Agg')
 import pandas as pd
 import pandas.io.sql as psql
 import cx_Oracle as odb
 import numpy
 import math
-import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.legend as legend
+
+
 
 class PreProcess():
 
    def makeDF(self):
-      user = 'user'
-      pw = 'user'
-      dbenv = 'db'
+      user = 'USER'
+      pw = 'USER'
+      dbenv = 'DB'
       conn = odb.connect(user + '/' + pw + '@' + dbenv)
       sqlF = open('/home/trivi9ri/2016KETI/SS/LineUPH3.sql')
       LineSql = sqlF.read()
@@ -25,10 +30,10 @@ class PreProcess():
       df.columns = [rec[0] for rec in curs.description]
 
 #     df.to_csv('test.csv')
-
       return df
 
-   def DataPre(self):
+   def DataPre(self, RateType):
+      print RateType
       DataF = pd.DataFrame()
       DataF = self.makeDF()
       Cum_Load = []
@@ -43,7 +48,10 @@ class PreProcess():
     
       for x in DataF:
 	 if ('QTY' in x)|('TIME' in x) | ('RATE' in x):
-		DataF = DataF[DataF[x] >= 0]
+	   if x=='LOAD_TIME':
+              DataF = DataF[DataF['LOAD_TIME'] > 0]
+           else:
+	      DataF = DataF[DataF[x] >= 0]
      
       row_cnt =  DataF.shape[0]
      
@@ -82,6 +90,12 @@ class PreProcess():
       Rmean = []
       Sz = []
       Sd = []
+      UL3 = []
+      UL2 = []
+      UL = []
+      LL3 = []
+      LL2 = []
+      LL = []
       total_Ri = 0
       Ri.append(0)
       Rmean.append(0)
@@ -89,30 +103,30 @@ class PreProcess():
    
 
       for l in range(row_cnt):
-         if DataF['LOAD_TIME'].iloc[l] != 0:
-            Pi.append(float(DataF['RUN_TIME'].iloc[l])/float(DataF['LOAD_TIME'].iloc[l]))
-         else: Pi.append(0)
-   
          Pmean.append(float(DataF['CUM_RUN'].iloc[l])/float(DataF['CUM_LOAD'].iloc[l]))
-    
+         if RateType == 'TIME':
+            Pi.append(float(DataF['TIME_RATE'].iloc[l]/100.0))
+         elif RateType == 'PERF':
+            Pi.append(float(DataF['PERFORMANCE_RATE'].iloc[l]/100.0))              
+
       for m in range(row_cnt):
-          if (DataF['LOAD_TIME'].iloc[m] != 0):
             Spi.append(math.sqrt(float(Pmean[row_cnt-1]*(1-Pmean[row_cnt-1]))/float(DataF['LOAD_TIME'].iloc[m])))
-          else: Spi.append(0)
-          if (Spi[m] != 0):
             Zi.append(float((Pi[m]-Pmean[row_cnt-1]))/float(Spi[m]))
-          else: Zi.append(0)
-          if m > 0:
-            Ri.append(abs(Zi[m]-Zi[m-1]))
-            total_Ri += Ri[m]
-            Rmean.append(float(total_Ri)/float(m))
-            Sz.append(float(Rmean[m])/1.128)
+            if m > 0:
+               Ri.append(abs(Zi[m]-Zi[m-1]))
+               total_Ri += Ri[m]
+               Rmean.append(float(total_Ri)/float(m))
+               Sz.append(float(Rmean[m])/1.128)
         
       for n in range(row_cnt):
           Sd.append(Spi[n]*Sz[row_cnt-1])
+          UL3.append(Pmean[row_cnt-1]+3 * Sd[n])
+          UL2.append(Pmean[row_cnt-1]+2 * Sd[n])
+          UL.append(Pmean[row_cnt-1]+Sd[n])
+          LL3.append(Pmean[row_cnt-1]-3*Sd[n])
+          LL2.append(Pmean[row_cnt-1]-2*Sd[n])
+          LL.append(Pmean[row_cnt-1]-Sd[n])
         
-      
-
       DataF['Pi'] = Pi
       DataF['Pmean'] = Pmean
       DataF['Spi'] = Spi
@@ -121,10 +135,47 @@ class PreProcess():
       DataF['Rmean'] = Rmean
       DataF['Sz'] = Sz
       DataF['Sd'] = Sd
-      print DataF        
- #     DataF.to_csv('example.csv')
+      DataF['CL'] = Pmean
+      DataF['3UL'] = UL3
+      DataF['2UL'] = UL2
+      DataF['UL'] = UL
+      DataF['3LL'] = LL3
+      DataF['2LL'] = LL2
+      DataF['LL'] = LL
+    
+      self.drawGraph(DataF,RateType)        
+ #     DataF.to_csv('example.csv')i
+   def drawGraph(self,df,RateType):
+      print RateType
+      LocArr = df.LOCATION_ID.unique()
+      for a in LocArr:
+         df_LN = df[df['LOCATION_ID'] == a]
+         LNPi = df_LN['Pi'].tolist()
+         LNCL = df_LN['CL'].tolist()
+         LN3UL = df_LN['3UL'].tolist()
+         LN3LL = df_LN['3LL'].tolist()
+         ax = []
+         for x in df_LN['REQUEST_TIME']:
+            ax.append(x[5:])
+         x = range(len(ax)) 
+         plt.xticks(x,ax)
+         plt.xticks(rotation=60)
+         plt.plot(x, LNPi,x, LNCL,x,LN3UL,x,LN3LL)
+         plt.title(a)
+         plt.xlabel('Date')
+         plt.ylabel('Proportion')
+         plt.legend(['Pi','CL','3UL','3LL'],loc='best')
+         if RateType == 'TIME':
+      #      print "tt"
+            plt.savefig("/home/trivi9ri/2016KETI/SS/T"+a+".png",dpi = 72)
+         elif RateType == 'PERF':
+      #      print "pp"
+            plt.savefig("/home/trivi9ri/2016KETI/SS/P"+a+".png",dpi = 72)
+         plt.cla()
+         plt.clf()      
 
 if __name__ == '__main__':
    dpp = PreProcess()
-   dpp.DataPre()
+   dpp.DataPre('TIME')
+   dpp.DataPre('PERF')
      
